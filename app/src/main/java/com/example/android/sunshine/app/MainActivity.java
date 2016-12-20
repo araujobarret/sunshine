@@ -8,8 +8,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import java.util.ArrayList;
+
+import static com.example.android.sunshine.app.R.menu.main;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -28,7 +32,7 @@ public class MainActivity extends ActionBarActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+        getMenuInflater().inflate(main, menu);
         return true;
     }
 
@@ -47,10 +51,8 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
     public static class PlaceholderFragment extends Fragment {
+
 
         public PlaceholderFragment() {
         }
@@ -60,6 +62,7 @@ public class MainActivity extends ActionBarActivity {
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
+            ArrayAdapter<String> mForecastAdapter;
             ArrayList<String> forecasts = new ArrayList<String>();
             forecasts.add("Today - Sunny - 88/63");
             forecasts.add("Tomorrow - Froggy - 70/46");
@@ -68,7 +71,13 @@ public class MainActivity extends ActionBarActivity {
             forecasts.add("Fri - Froggy - 70/46");
             forecasts.add("Sat - Sunny - 70/68");
 
+            mForecastAdapter = new ArrayAdapter<String>(getActivity(),
+                    R.layout.list_item_forecast, R.id.list_item_forecast_textview, forecasts);
+
+            ListView lista = (ListView) rootView.findViewById(R.id.listview_forecast);
+            lista.setAdapter(mForecastAdapter);
             return rootView;
         }
     }
+
 }
