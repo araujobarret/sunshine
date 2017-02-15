@@ -1,5 +1,6 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -30,6 +31,8 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
+import static android.R.attr.text;
+import static android.provider.LiveFolders.INTENT;
 import static com.example.android.sunshine.app.R.id.container;
 
 /**
@@ -89,7 +92,10 @@ public class ForecastFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapter, View view, int i, long l){
                 String text = mForecastAdapter.getItem(i);
-                Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT).show();
+                Intent intentDetail = new Intent(getActivity(), DetailActivity.class);
+                intentDetail.putExtra(Intent.EXTRA_TEXT, text);
+
+                startActivity(intentDetail);
             }
         });
 
