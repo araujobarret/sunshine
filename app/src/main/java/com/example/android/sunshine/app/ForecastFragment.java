@@ -1,9 +1,12 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -23,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,6 +38,7 @@ import java.util.ArrayList;
 import static android.R.attr.text;
 import static android.provider.LiveFolders.INTENT;
 import static com.example.android.sunshine.app.R.id.container;
+import static java.lang.Integer.parseInt;
 
 /**
  * Created by root on 14/02/17.
@@ -45,11 +50,25 @@ public class ForecastFragment extends Fragment {
     public ForecastFragment() {
     }
 
+    private void onUpdateWeather(){
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = sharedPref.getString("location", "");
+        String units = sharedPref.getString("units", "");
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        weatherTask.execute("d241eac0ecd3e0efab18a707816bd926", location, "7", units);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 
         setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        this.onUpdateWeather();
     }
 
     @Override
@@ -61,8 +80,10 @@ public class ForecastFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item){
         int id = item.getItemId();
         if(id == R.id.action_refresh) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String synConnPref = sharedPref.getString("location", "");
             FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("d241eac0ecd3e0efab18a707816bd926", "3451190", "7", "metric");
+            weatherTask.execute("d241eac0ecd3e0efab18a707816bd926", synConnPref, "7", "metric");
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -73,16 +94,11 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main,container, false);
 
-        ArrayList<String> forecasts = new ArrayList<String>();
-        forecasts.add("Today - Sunny - 88/63");
-        forecasts.add("Tomorrow - Froggy - 70/46");
-        forecasts.add("Weds - Cloudy - 70/63");
-        forecasts.add("Thurs - Rainy - 64/51");
-        forecasts.add("Fri - Froggy - 70/46");
-        forecasts.add("Sat - Sunny - 70/68");
 
         mForecastAdapter = new ArrayAdapter<String>(getActivity(),
-                R.layout.list_item_forecast, R.id.list_item_forecast_textview, forecasts);
+                R.layout.list_item_forecast,
+                R.id.list_item_forecast_textview,
+                new ArrayList<String>());
 
         ListView lista = (ListView) rootView.findViewById(R.id.listview_forecast);
         lista.setAdapter(mForecastAdapter);
@@ -107,7 +123,7 @@ public class ForecastFragment extends Fragment {
     public class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
 
         @Override
-        protected String[] doInBackground(String... urls){
+        protected String[] doInBackground(String... urls) {
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
             HttpURLConnection urlConnection = null;
@@ -117,71 +133,85 @@ public class ForecastFragment extends Fragment {
             StringBuffer buffer = new StringBuffer();
             String forecastJsonStr = null;
             String[] arrayJson = null;
+            InputStream inputStream;
+            if(urls[1].matches("\\d+")) {
+                try {
+                    // Construct the URL for the OpenWeatherMap query
+                    // Possible parameters are avaiable at OWM's forecast API page, at
+                    // http://openweathermap.org/API#forecast
+                    //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?id=524901&appid=d241eac0ecd3e0efab18a707816bd926&cnt=7");
+                    Uri.Builder builder = new Uri.Builder();
+                    builder.scheme("http")
+                            .authority("api.openweathermap.org")
+                            .appendPath("data")
+                            .appendPath("2.5")
+                            .appendPath("forecast")
+                            .appendPath("daily")
+                            .appendQueryParameter("appid", urls[0].toString())
+                            .appendQueryParameter("id", urls[1].toString())
+                            .appendQueryParameter("cnt", urls[2].toString())
+                            .appendQueryParameter("units", urls[3].toString());
 
-            try {
-                // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
-                // http://openweathermap.org/API#forecast
-                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?id=524901&appid=d241eac0ecd3e0efab18a707816bd926&cnt=7");
-                Uri.Builder builder = new Uri.Builder();
-                builder.scheme("http")
-                        .authority("api.openweathermap.org")
-                        .appendPath("data")
-                        .appendPath("2.5")
-                        .appendPath("forecast")
-                        .appendPath("daily")
-                        .appendQueryParameter("appid", urls[0].toString())
-                        .appendQueryParameter("id",urls[1].toString())
-                        .appendQueryParameter("cnt",urls[2].toString())
-                        .appendQueryParameter("units", urls[3].toString());
+                    url = new URL(builder.toString());
 
-                url = new URL(builder.toString());
+                    // Create the request to OpenWeatherMap, and open the connection
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
 
-                // Create the request to OpenWeatherMap, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                arrayJson = getWeatherDataFromJson(buffer.toString(), 7);
-
-            }
-            catch(JSONException e) {
-                Log.e("JSON ERROR: ", "Error", e);
-            }
-            catch (IOException e) {
-                Log.e("PlaceholderFragment", "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attemping
-                // to parse it.
-                return null;
-            } finally{
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
                     try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e("PlaceholderFragment", "Error closing stream", e);
+                        // Read the input stream into a String
+                        inputStream = urlConnection.getInputStream();
+                    }
+                    catch(FileNotFoundException e){
+                        Log.e("Weather get data ", "Error: ", e);
+                        return null;
+                    }
+                    catch (Exception e){
+                        Log.e("Weather get data ", "Error: ", e);
+                        return null;
+                    }
+
+                    if (inputStream == null) {
+                        // Nothing to do.
+                        return null;
+                    }
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                        // But it does make debugging a *lot* easier if you print out the completed
+                        // buffer for debugging.
+                        buffer.append(line + "\n");
+                    }
+
+                    if (buffer.length() == 0) {
+                        // Stream was empty.  No point in parsing.
+                        return null;
+                    }
+                    arrayJson = getWeatherDataFromJson(buffer.toString(), 7);
+
+                }
+                catch (JSONException e) {
+                    Log.e("JSON ERROR: ", "Error", e);
+                }
+                catch (IOException e) {
+                    Log.e("PlaceholderFragment", "Error ", e);
+                    // If the code didn't successfully get the weather data, there's no point in attemping
+                    // to parse it.
+                    return null;
+                }
+                finally {
+                    if (urlConnection != null) {
+                        urlConnection.disconnect();
+                    }
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (final IOException e) {
+                            Log.e("PlaceholderFragment", "Error closing stream", e);
+                        }
                     }
                 }
             }

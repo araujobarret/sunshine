@@ -8,6 +8,15 @@
 
     <string name="pref_location_label">Location</string>
     <string name="pref_location_key" translatable="false">location</string>
-    <string name="pref_location_default" translatable="false">00000</string>
+    <string name="pref_location_default" translatable="false">3451190</string>
+
+    <string name="pref_unit_label">Temperature Units</string>
+    <string name="pref_unit_key" translatable="false">units</string>
+    <string name="pref_unit_default" translatable="false">metric</string>
+
+    <string name="pref_unit_label_metric">Metric</string>
+    <string name="pref_unit_label_imperative">Imperative</string>
+    <string name="pref_unit_metric" translatable="false">metric</string>
+    <string name="pref_unit_imperative" translatable="false">imperative</string>
 
 </resources>
