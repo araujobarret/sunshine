@@ -46,7 +46,7 @@ import static java.lang.Integer.parseInt;
 
 public class ForecastFragment extends Fragment {
     ArrayAdapter<String> mForecastAdapter;
-
+    public final String APP_ID = "d241eac0ecd3e0efab18a707816bd926";
     public ForecastFragment() {
     }
 
@@ -55,7 +55,7 @@ public class ForecastFragment extends Fragment {
         String location = sharedPref.getString("location", "");
         String units = sharedPref.getString("units", "");
         FetchWeatherTask weatherTask = new FetchWeatherTask();
-        weatherTask.execute("d241eac0ecd3e0efab18a707816bd926", location, "7", units);
+        weatherTask.execute(APP_ID, location, "7", units);
     }
 
     @Override
